@@ -1,29 +1,64 @@
 #!/usr/bin/env python3
-from monitor import Monitor
 import sys
+import os
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '../../Monitor'))
+from monitor import Monitor
 
-# Config File
 import configparser
+import socket
+
+# Packet markers
+FIN    = b'FIN\n'
+FINACK = b'FINACK\n'
+
+def make_ack(seq: int) -> bytes:
+	return f'ACK {seq}\n'.encode()
 
 if __name__ == '__main__':
-	print("Sender starting up!")
+	print("Receiver starting up!")
 	config_path = sys.argv[1]
 
-	# Initialize sender monitor
-	send_monitor = Monitor(config_path, 'sender')
-	
-	# Parse config file
+	recv_monitor = Monitor(config_path, 'receiver')
+
 	cfg = configparser.RawConfigParser(allow_no_value=True)
 	cfg.read(config_path)
-	receiver_id = int(cfg.get('receiver', 'id'))
-	file_to_send = cfg.get('nodes', 'file_to_send')
-	max_packet_size = int(cfg.get('network', 'MAX_PACKET_SIZE'))
+	sender_id      = int(cfg.get('sender', 'id'))
+	max_pkt_size   = int(cfg.get('network', 'MAX_PACKET_SIZE'))
+	write_location = cfg.get('receiver', 'write_location')
 
-	# Exchange messages!
-	print('Sender: Sending "Hello, World!" to receiver.')
-	send_monitor.send(receiver_id, b'Hello, World!')
-	addr, data = send_monitor.recv(max_packet_size)
-	print(f'Sender: Got response from id {addr}: {data}')
+	expected_seq = 0
 
-	# Exit! Make sure the receiver ends before the sender. send_end will stop the emulator.
-	send_monitor.send_end(receiver_id)
+	with open(write_location, 'wb') as f:
+		while True:
+			addr, data = recv_monitor.recv(max_pkt_size)
+
+			if data == FIN:
+				recv_monitor.send(sender_id, FINACK)
+				break
+
+			# Parse: '{seq}\n{chunk}'
+			newline = data.index(b'\n')
+			seq     = int(data[:newline])
+			chunk   = data[newline + 1:]
+			if seq == expected_seq:
+				f.write(chunk)
+				expected_seq ^= 1
+
+			recv_monitor.send(addr, make_ack(seq))
+
+	# Verify received file and log stats
+	recv_monitor.recv_end(write_location, sender_id)
+
+	# Keep ACKing retransmitted FINs until the emulator shuts down
+	recv_monitor.socketfd.settimeout(2.0)
+	while True:
+		try:
+			addr, data = recv_monitor.recv(max_pkt_size)
+			if data == FIN:
+				recv_monitor.send(sender_id, FINACK)
+		except socket.timeout:
+			break
+		except Exception:
+			break
+
+	print('Receiver: done.')

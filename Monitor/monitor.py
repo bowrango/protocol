@@ -67,7 +67,7 @@ def sender_id(LOG_FILE_PATH, message):
 	Attempts to parse the sender id from this message. Sender id is the first integer in the first line of the packet.
 	:return: int Sender id. -1 on failure.
 	"""
-	
+
 	try:
 		return int(message.split(b'\n')[0].split(b' ')[0])
 	except:
@@ -81,7 +81,7 @@ def sender_id(LOG_FILE_PATH, message):
 
 class Monitor:
 	"""
-	Network Monitor class to send data to the network emulator. This is also responsible 
+	Network Monitor class to send data to the network emulator. This is also responsible
 	for calculating and keeping track of network statistics for that sender.
 	"""
 	def __init__(self, configFile, config_heading):
@@ -101,7 +101,7 @@ class Monitor:
 		self.total_time = 0
 		self.last_sent_time = None
 		self.last_recv_time = None
-		
+
 		# Dictionaries to hold per sender/receiver byte information
 		self.in_data = {self.addr[1]: 0}
 		self.in_packets = {self.addr[1]: 0}
@@ -145,15 +145,15 @@ class Monitor:
 
 		if self.last_sent_time:
 			self.total_time += time.time() - self.last_sent_time
-		
+
 		# Update the sent timestamp
 		self.last_sent_time = time.time()
-		
+
 		if dest in self.out_data:
 			self.out_data[dest] += len(data)
 		else:
 			self.out_data[dest] = len(data)
-		
+
 		if dest in self.out_packets:
 			self.out_packets[dest] += 1
 		else:
@@ -177,12 +177,12 @@ class Monitor:
 			self.in_data[sender] += len(data)
 		else:
 			self.in_data[sender] = len(data)
-		
+
 		if sender in self.in_packets:
 			self.in_packets[sender] += 1
 		else:
 			self.in_packets[sender] = 1
-			
+
 		return sender, data
 
 	def send_end(self, dest_id):
@@ -194,7 +194,7 @@ class Monitor:
 		assert isinstance(dest_id, int), 'Please give an integer ID!'
 		self.total_time += time.time() - self.last_sent_time
 		filesize = os.path.getsize(self.file)
-		
+
 		log(self.LOG_FILE_PATH, f'File Size					: {filesize} bytes')
 		log(self.LOG_FILE_PATH, f'Total Bytes Transmitted		: {self.out_data[dest_id]} bytes')
 		log(self.LOG_FILE_PATH, f'Overhead					: {self.out_data[dest_id] - filesize} bytes')
@@ -236,7 +236,7 @@ class Monitor:
 		log(self.LOG_FILE_PATH, f'Number of Packets Received	: {self.out_packets[sender_id]}')
 		log(self.LOG_FILE_PATH, f'Total Bytes Transmitted		: {self.in_data[sender_id]}')
 		log(self.LOG_FILE_PATH, f'Total Time					: {round(self.total_time, 2)} secs')
-		
+
 		# Reset the counters for next file
 		self.total_time = 0
 		self.last_sent_time = None

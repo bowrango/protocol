@@ -7,21 +7,27 @@ A project implementing and optimising reliable data transfer protocols over an e
 The system consists of three components:
 
 - **Network Emulator** (`Emulator/emulator.py`) — simulates an unreliable network link, introducing configurable packet loss, reordering, propagation delay, and bandwidth limits.
-- **Network Monitor** (`monitor.py`) — an interface layer that each sender/receiver instantiates to communicate through the emulator.
+- **Network Monitor** (`Monitor/monitor.py`) — an interface layer that each sender/receiver instantiates to communicate through the emulator.
 - **Protocol Implementations** (`src/`) — sender and receiver implementations using different protocol strategies.
 
 ## Project Structure
 
 ```
 .
-├── Emulator/           # Network emulator
-├── TestConfig/         # Sample configuration files
-├── files/              # Files used for transmission tests
+├── Emulator/                   # Network emulator
+├── Monitor/                    # Network monitor
+├── TestConfig/                 # Sample configuration files
+├── data/                       # Files used for transmission tests
 ├── src/
-│   ├── baseline/       # Stop-and-Go protocol implementation
-│   ├── custom/         # Sliding window protocol implementation
-│   └── example/        # Reference example
-└── base_config.ini     # Base configuration template
+│   ├── baseline/               # Stop-and-Go protocol implementation
+│   ├── custom/                 # Sliding window protocol (stub)
+│   └── example/                # Reference example
+├── base_config.ini             # Base configuration template
+├── run_experiments.py          # Automated experiment runner
+├── generate_latex_results.py   # Converts results JSON → LaTeX macros
+├── generate_plots.py           # Generates variance bar-chart figures
+├── bowring-matt-report.tex     # Lab 3 interim/final report (LaTeX)
+└── experiment_results.json     # Saved experiment results (auto-generated)
 ```
 
 ## Quick Start
@@ -94,3 +100,36 @@ The sender transmits one packet and waits for its ACK before sending the next. O
 ### Custom (`src/custom/`)
 
 The sender maintains a window of `W` unacknowledged packets in flight. The receiver uses cumulative ACKs. On timeout (or detected loss), unacknowledged packets are retransmitted.
+
+## Lab Report
+
+The report is written in LaTeX (`bowring-matt-report.tex`). Three helper scripts handle data collection and figure generation:
+
+### `run_experiments.py`
+
+Runs the stop-and-go baseline across three bandwidth settings (200,000 / 20,000 / 2,000 bytes/s), each with 2% packet loss and 2% reordering, using `data/to_send_large.txt` as the payload. Results are saved to `experiment_results.json` after each bandwidth group, so the script can be safely interrupted and resumed.
+
+```bash
+/Users/mattbowring/Desktop/dlopt/.venv/bin/python3 run_experiments.py
+```
+
+Expected runtime: ~12 min (200k + 20k groups) + ~36 min (2k group).
+
+### `generate_latex_results.py`
+
+Reads `experiment_results.json` and writes `results.tex`, which defines `\renewcommand` macros for every mean[std] value in the report. `bowring-matt-report.tex` automatically `\input`s this file on compilation, so re-running this script and recompiling the PDF is all that is needed to update the numbers.
+
+```bash
+/Users/mattbowring/Desktop/dlopt/.venv/bin/python3 generate_latex_results.py
+pdflatex bowring-matt-report.tex
+```
+
+### `generate_plots.py`
+
+Reads `experiment_results.json` and writes `figures/goodput_variance.pdf` and `figures/overhead_variance.pdf` — grouped bar charts showing per-run goodput and overhead for the custom protocol vs. stop-and-go. These are included in the Variance Graphs section of the report.
+
+```bash
+/Users/mattbowring/Desktop/dlopt/.venv/bin/python3 generate_plots.py
+```
+
+Requires both `sng_200k` and `custom_200k` entries to be present in `experiment_results.json`.
