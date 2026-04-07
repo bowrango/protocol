@@ -20,14 +20,16 @@ The system consists of three components:
 ├── data/                       # Files used for transmission tests
 ├── src/
 │   ├── baseline/               # Stop-and-Go protocol implementation
-│   ├── custom/                 # Sliding window protocol (stub)
+│   ├── custom/                 # Sliding window protocol (implemented)
 │   └── example/                # Reference example
 ├── base_config.ini             # Base configuration template
 ├── run_experiments.py          # Automated experiment runner
 ├── generate_latex_results.py   # Converts results JSON → LaTeX macros
 ├── generate_plots.py           # Generates variance bar-chart figures
-├── bowring-matt-report.tex     # Lab 3 interim/final report (LaTeX)
-└── experiment_results.json     # Saved experiment results (auto-generated)
+├── report/                     # Lab report directory
+│   ├── experiment scripts      # Run in background process
+│   ├── results.tex             # Auto-generated LaTeX macros
+│   └── figures/                # Generated variance plots
 ```
 
 ## Quick Start
@@ -99,37 +101,33 @@ The sender transmits one packet and waits for its ACK before sending the next. O
 
 ### Custom (`src/custom/`)
 
-The sender maintains a window of `W` unacknowledged packets in flight. The receiver uses cumulative ACKs. On timeout (or detected loss), unacknowledged packets are retransmitted.
+The sender maintains a window of `W` unacknowledged packets in flight. The receiver uses cumulative ACKs with selective ACK (SACK) piggyback. Features include dynamic EWMA timeout estimation (Karn's algorithm), fast retransmit on 3 duplicate ACKs, and SACK-guided selective retransmission.
 
-## Lab Report
-
-The report is written in LaTeX (`bowring-matt-report.tex`). Three helper scripts handle data collection and figure generation:
+## Report
 
 ### `run_experiments.py`
 
 Runs the stop-and-go baseline across three bandwidth settings (200,000 / 20,000 / 2,000 bytes/s), each with 2% packet loss and 2% reordering, using `data/to_send_large.txt` as the payload. Results are saved to `experiment_results.json` after each bandwidth group, so the script can be safely interrupted and resumed.
 
 ```bash
-/Users/mattbowring/Desktop/dlopt/.venv/bin/python3 run_experiments.py
+python3 run_experiments.py
 ```
-
-Expected runtime: ~12 min (200k + 20k groups) + ~36 min (2k group).
 
 ### `generate_latex_results.py`
 
-Reads `experiment_results.json` and writes `results.tex`, which defines `\renewcommand` macros for every mean[std] value in the report. `bowring-matt-report.tex` automatically `\input`s this file on compilation, so re-running this script and recompiling the PDF is all that is needed to update the numbers.
+Reads `experiment_results.json` and writes `report/results.tex`, which defines `\renewcommand` macros for every mean[std] value in the report. The report automatically `\input`s this file on compilation, so re-running this script and recompiling the PDF is all that is needed to update the numbers.
 
 ```bash
-/Users/mattbowring/Desktop/dlopt/.venv/bin/python3 generate_latex_results.py
-pdflatex bowring-matt-report.tex
+python3 generate_latex_results.py
+cd report && pdflatex matt.bowring.Project3.final.tex
 ```
 
 ### `generate_plots.py`
 
-Reads `experiment_results.json` and writes `figures/goodput_variance.pdf` and `figures/overhead_variance.pdf` — grouped bar charts showing per-run goodput and overhead for the custom protocol vs. stop-and-go. These are included in the Variance Graphs section of the report.
+Reads `experiment_results.json` and writes `figures/goodput_variance.pdf` and `figures/overhead_variance.pdf` — grouped bar charts showing per-run goodput and overhead for the custom protocol vs. stop-and-go.
 
 ```bash
-/Users/mattbowring/Desktop/dlopt/.venv/bin/python3 generate_plots.py
+python3 generate_plots.py
 ```
 
 Requires both `sng_200k` and `custom_200k` entries to be present in `experiment_results.json`.

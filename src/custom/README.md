@@ -1,5 +1,16 @@
 Custom protocol implementation
 
+Use more than two interesting features. For example:
+cumulative and selective ACK
+dynamic timeout, fast retransmit, dynamic window size
+
+Schemes must be explained clearly. Proper ablation study
+
+It should read the network parameters in the config file to set the window size and other parameters appropriately.
+Additionally, if you’re using a NACK scheme, your buffer can’t be larger than the maximum window size (50), and you aren’t allowed to
+send the entire file at once.
+Avoid printing/logging in any time-sensitive sections of your code.
+
 Starting Point:
 The sender maintains a sliding
 window of packets to be transmitted to the receiver, moving the window forward as it receives ACKs.

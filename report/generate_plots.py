@@ -2,7 +2,7 @@
 """
 Generate variance bar-charts from experiment_results.json.
 Saves figures/goodput_variance.pdf and figures/overhead_variance.pdf.
-Usage: /Users/mattbowring/Desktop/dlopt/.venv/bin/python3 generate_plots.py
+Usage: python3 generate_plots.py
 """
 
 import json, os
@@ -36,13 +36,20 @@ def bar_chart(sng_vals, custom_vals, ylabel, title, filename,
         ax.bar(x[:len(custom_vals)] + width / 2, custom_vals, width,
                label=custom_label, color='tomato', edgecolor='black', linewidth=0.6)
 
-    # Mean lines
+    # Mean lines with std error bars (plotted as a single point at the right edge)
+    x_right = n + 0.7
     if sng_vals:
-        ax.axhline(np.mean(sng_vals), color='steelblue', linestyle='--',
-                   linewidth=1.2, label=f'{sng_label} mean')
+        sng_mean, sng_std = np.mean(sng_vals), np.std(sng_vals, ddof=1)
+        ax.axhline(sng_mean, color='steelblue', linestyle='--',
+                   linewidth=1.2, label=f'{sng_label} mean \u00b1 1\u03c3')
+        ax.errorbar(x_right - 0.15, sng_mean, yerr=sng_std, fmt='none',
+                    ecolor='steelblue', capsize=4, capthick=1.5, elinewidth=1.5)
     if custom_vals:
-        ax.axhline(np.mean(custom_vals), color='tomato', linestyle='--',
-                   linewidth=1.2, label=f'{custom_label} mean')
+        cust_mean, cust_std = np.mean(custom_vals), np.std(custom_vals, ddof=1)
+        ax.axhline(cust_mean, color='tomato', linestyle='--',
+                   linewidth=1.2, label=f'{custom_label} mean \u00b1 1\u03c3')
+        ax.errorbar(x_right + 0.15, cust_mean, yerr=cust_std, fmt='none',
+                    ecolor='tomato', capsize=4, capthick=1.5, elinewidth=1.5)
 
     ax.set_xlabel('Run')
     ax.set_ylabel(ylabel)
@@ -62,7 +69,7 @@ sng_goodput    = results.get('sng_200k', {}).get('raw_goodput') or []
 custom_goodput = results.get('custom_200k', {}).get('raw_goodput') or []
 bar_chart(sng_goodput, custom_goodput,
           ylabel='Goodput (bytes/s)',
-          title='Goodput per run — BW=200k, 2% loss, 2% reorder',
+          title='Goodput per run (BW=200k, 2% loss, 2% reorder)',
           filename='goodput_variance.pdf')
 
 # ---- Overhead chart ----
@@ -70,7 +77,7 @@ sng_overhead    = results.get('sng_200k', {}).get('raw_overhead') or []
 custom_overhead = results.get('custom_200k', {}).get('raw_overhead') or []
 bar_chart(sng_overhead, custom_overhead,
           ylabel='Overhead (% of bytes sent)',
-          title='Overhead per run — BW=200k, 2% loss, 2% reorder',
+          title='Overhead per run (BW=200k, 2% loss, 2% reorder)',
           filename='overhead_variance.pdf')
 
 print('Done.')

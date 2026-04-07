@@ -10,9 +10,14 @@ src/example
 # Logs
 *.log
 
+# Reading
+reading
+
 # LaTeX build artefacts
 report/*.aux
 report/*.log
 report/*.out
 report/*.pdf
 report/*.tex
+# Data
+report/experiment_results.json

@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """
-Run stop-and-go baseline experiments for Lab 3 and save results to JSON.
-Usage: /Users/mattbowring/Desktop/dlopt/.venv/bin/python3 run_experiments.py
+Run stop-and-go baseline experiments and save results to JSON.
+Usage: python3 run_experiments.py
 """
 
 import subprocess, time, os, re, tempfile, shutil, json, statistics, sys
 
-PYTHON        = '/Users/mattbowring/Desktop/dlopt/.venv/bin/python3'
+PYTHON        = 'python3'
 REPORT_DIR    = os.path.dirname(os.path.abspath(__file__))
 BASE_DIR      = os.path.dirname(REPORT_DIR)   # project root (one level up)
 EMULATOR_PATH = os.path.join(BASE_DIR, 'Emulator', 'emulator.py')
